@@ -1,0 +1,24 @@
+{
+  "name": "karma-multibrowser-reporter",
+  "version": "1.0.0",
+  "description": "A verbose Karma reporter for multi-browser runs.",
+  "main": "reporter.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "karma-plugin",
+    "karma-reporter"
+  ],
+  "author": "Perry Shuman",
+  "license": "MIT",
+  "peerDependencies": {
+    "karma": ">=0.12"
+  },
+  "devDependencies": {
+    "eslint": "^2.3.0"
+  },
+  "dependencies": {
+    "colors": "^1.1.2"
+  }
+}
