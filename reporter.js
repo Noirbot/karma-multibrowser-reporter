@@ -1,11 +1,10 @@
 require('colors');
 
 function MultiBrowserSummaryReporter(config) {
-  var _tests = null;
-
-  /* ======================================================================== */
-  /* INTERNAL FUNCTIONS                                                       */
-  /* ======================================================================== */
+  /*
+   * _tests serves as the primary datastore for test results.
+   */
+  var _tests = {};
 
   /*
    * Check if we already know about this browser.
@@ -118,14 +117,10 @@ function MultiBrowserSummaryReporter(config) {
     return output;
   }
 
-  /* ======================================================================== */
-  /* RUN START/COMPLETE                                                       */
-  /* ======================================================================== */
-
-  this.onRunStart = function runStart() {
-    _tests = {};
-  };
-
+  /*
+   * When the run of tests completes, we need to log the results.
+   * Reads from the _tests object and iteratively prints the data.
+   */
   this.onRunComplete = function runComplete() {
     var browser = null;
     var suiteOutput;
@@ -153,7 +148,7 @@ function MultiBrowserSummaryReporter(config) {
         } else {
           process.stdout.write('Suites and tests results:\n'.bold.underline);
         }
-        process.stdout.write('\n' + suiteOutput + '\n');
+        process.stdout.write(suiteOutput + '\n');
       }
 
       process.stdout.write('\nPer browser summary:\n\n'.bold.underline);
@@ -167,6 +162,10 @@ function MultiBrowserSummaryReporter(config) {
     process.stdout.write('\n');
   };
 
+  /*
+   * When each test spec completes, we need to store it's result.
+   * Uses the global _tests object to store the results.
+   */
   this.onSpecComplete = function specComplete(browser, result) {
     var suite = '';
     var b = getBrowserSafely(browser);
@@ -199,14 +198,11 @@ function MultiBrowserSummaryReporter(config) {
       tests.result[result.description] = 'failure';
     }
   };
-
-  this.adapters = [];
 }
 
-/* ========================================================================== */
-/* MODULE DECLARATION                                                         */
-/* ========================================================================== */
-
+/*
+ * Configure dependencies and exports from this module.
+ */
 MultiBrowserSummaryReporter.$inject = ['config'];
 module.exports = {
   'reporter:multibrowser-summary': ['type', MultiBrowserSummaryReporter]
