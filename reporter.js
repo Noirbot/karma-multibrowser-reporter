@@ -1,8 +1,7 @@
-require('colors');
 var util = require('util');
+require('colors');
 
 function MultiBrowserSummaryReporter(logger, config) {
-  var _log = logger.create('report');
   var _tests = null;
 
   /* ======================================================================== */
@@ -18,51 +17,58 @@ function MultiBrowserSummaryReporter(logger, config) {
     /* onBrowserLog might arrive before onBrowserStart, sooo */
     if (_tests[browser.id]) return _tests[browser.id];
     _tests[browser.id] = {
-      "name": browser.name,
-      "successes": 0,
-      "failures": 0,
-      "skipped": 0,
-      "total": 0,
-      "suites": {},
-      "log": []
+      name: browser.name,
+      successes: 0,
+      failures: 0,
+      skipped: 0,
+      total: 0,
+      suites: {},
+      log: []
     };
     return _tests[browser.id];
   }
 
   function message(result) {
     var responses = [];
+    var joinWith = '';
     if (result.total > 0) {
-      if (result.total == 1) {
+      if (result.total === 1) {
         responses = [];
-        if (result.successes) responses.push("ok".green);
-        if (result.failures)  responses.push("failed".red);
-        if (result.skipped)   responses.push("skipped".yellow);
-        return responses.join(' ');
+        if (result.successes) responses.push('ok'.green);
+        if (result.failures) responses.push('failed'.red);
+        if (result.skipped) responses.push('skipped'.yellow);
+        joinWith = ' ';
       } else {
         responses = [];
-        if (result.successes) responses.push((result.successes + " ok").green);
-        if (result.failures)  responses.push((result.failures  + " failed").red);
-        if (result.skipped)   responses.push((result.skipped   + " skipped").yellow);
-        return responses.join(', ');
+        if (result.successes) responses.push((result.successes + ' ok').green);
+        if (result.failures) responses.push((result.failures + ' failed').red);
+        if (result.skipped) responses.push((result.skipped + ' skipped').yellow);
+        joinWith = ', ';
       }
-    } else {
-      return "no tests".magenta;
+      return responses.join(joinWith);
     }
+
+    return 'no tests'.magenta;
   }
 
-  function report(tests, indent) {
-    if (! tests) return false;
-
-    indent = indent || '';
+  function report(tests, baseIndent) {
+    var indent = baseIndent || '';
     var output = '';
+    var results = [];
+    var line;
 
-    if (tests.result) {
-      var results = Object.keys(tests.result);
+    if (tests) {
+      results = Object.keys(tests.result);
+    } else {
+      return false;
+    }
+
+    if (results) {
       for (var i in results) {
         var result = tests.result[results[i]];
-        if (config.verboseReporter.output === 'only-failure' && result != 'failure') continue;
+        if (config.verboseReporter.output === 'only-failure' && result !== 'failure') continue;
 
-        var line = result;
+        line = result;
 
         if (config.verboseReporter.color === 'full') {
           line = [indent, '*', results[i], ':', result, '\n'].join(' ');
@@ -78,6 +84,8 @@ function MultiBrowserSummaryReporter(logger, config) {
           case 'skipped':
             line = line.yellow;
             break;
+          default:
+            break;
         }
 
         if (config.verboseReporter.color !== 'full') {
@@ -92,12 +100,12 @@ function MultiBrowserSummaryReporter(logger, config) {
       var suites = Object.keys(tests.suites);
 
       for (var j in suites) {
-        var suite_str = [indent, '-', suites[j].bold, ':', '\n'].join(' ');
-        var test_report = report(tests.suites[suites[j]], '  ' + indent);
+        var suiteStr = [indent, '-', suites[j].bold, ':', '\n'].join(' ');
+        var testReport = report(tests.suites[suites[j]], '  ' + indent);
 
-        if (test_report) {
-          suite_str += test_report;
-          output += suite_str;
+        if (testReport) {
+          suiteStr += testReport;
+          output += suiteStr;
         }
       }
     }
@@ -109,64 +117,62 @@ function MultiBrowserSummaryReporter(logger, config) {
   /* RUN START/COMPLETE                                                       */
   /* ======================================================================== */
 
-  this.onRunStart = function(browsers) {
+  this.onRunStart = function runStart() {
     _tests = {};
   };
 
-  this.onRunComplete = function(browsers, results) {
+  this.onRunComplete = function runComplete() {
     var browser = null;
+    var suiteOutput;
+    // var logBrowser;
 
     if (_tests.length === 0) {
-      print('\n\nNo results found.\n'.bold.underline);
-    }
-    else {
-      suite_output = '';
+      process.stdout.write('\n\nNo results found.\n'.bold.underline);
+    } else {
+      suiteOutput = '';
 
-
-      var logBrowser = function(entry) {
-        log[entry.level](entry.message);
-      };
+      // logBrowser = function bLog(entry) {
+      //   log[entry.level](entry.message);
+      // };
 
       for (var i in _tests) {
         browser = _tests[i];
         var log = logger.create(browser.name);
-        browser.log.forEach(logBrowser);
+        // browser.log.forEach(logBrowser);
         browser.log = [];
 
-        output = report(browser);
+        var output = report(browser);
 
         if (output) {
-          suite_output += ("\n" + browser.name + "\n").bold.underline + output;
+          suiteOutput += ('\n' + browser.name + '\n').bold.underline + output;
         }
       }
 
-      if (suite_output) {
-        print("\n");
+      if (suiteOutput) {
+        process.stdout.write('\n');
         if (config.verboseReporter.output === 'only-failure') {
-          print('Test failures by browser:'.bold.underline);
+          process.stdout.write('Test failures by browser:\n'.bold.underline);
+        } else {
+          process.stdout.write('Suites and tests results:\n'.bold.underline);
         }
-        else {
-          print("Suites and tests results:".bold.underline);
-        }
-        print();
-        print(suite_output);
+        process.stdout.write('\n' + suiteOutput + '\n');
       }
 
       print();
-      print("Per browser summary:".bold.underline);
+      print('Per browser summary:'.bold.underline);
       print();
 
       for (var j in _tests) {
         browser = _tests[j];
-        print(" - " + browser.name.bold + ": " + browser.total + " tests");
-        print("   - " + message(browser));
+        print(' - ' + browser.name.bold + ': ' + browser.total + ' tests');
+        print('   - ' + message(browser));
       }
     }
 
     print();
   };
 
-  this.onSpecComplete = function(browser, result) {
+  this.onSpecComplete = function specComplete(browser, result) {
     var suite = '';
     var b = forBrowser(browser);
     var tests = b;
@@ -182,12 +188,12 @@ function MultiBrowserSummaryReporter(logger, config) {
 
     suite = suite.length > 2 ? ' | ' + suite.substring(2) + ' | ' : ' | ';
 
-    var log = logger.create(browser.name + suite + result.description);
-
-    b.log.forEach(function(entry) {
-      log[entry.level](entry.message);
-    });
-    b.log = [];
+    // var log = logger.create(browser.name + suite + result.description);
+    //
+    // b.log.forEach(function(entry) {
+    //   log[entry.level](entry.message);
+    // });
+    // b.log = [];
 
     if (! tests.result) tests.result = {};
     if (! tests.result[result.description]) tests.result[result.description] = null;
