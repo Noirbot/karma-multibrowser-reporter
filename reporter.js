@@ -54,11 +54,13 @@ function MultiBrowserSummaryReporter(logger, config) {
   function report(tests, baseIndent) {
     var indent = baseIndent || '';
     var output = '';
-    var results = [];
+    var results;
+    var suites;
     var line;
 
     if (tests) {
-      results = Object.keys(tests.result);
+      if (tests.result) results = Object.keys(tests.result);
+      if (tests.suites) suites = Object.keys(tests.suites);
     } else {
       return false;
     }
@@ -96,9 +98,7 @@ function MultiBrowserSummaryReporter(logger, config) {
       }
     }
 
-    if (tests.suites) {
-      var suites = Object.keys(tests.suites);
-
+    if (suites) {
       for (var j in suites) {
         var suiteStr = [indent, '-', suites[j].bold, ':', '\n'].join(' ');
         var testReport = report(tests.suites[suites[j]], '  ' + indent);
@@ -124,6 +124,7 @@ function MultiBrowserSummaryReporter(logger, config) {
   this.onRunComplete = function runComplete() {
     var browser = null;
     var suiteOutput;
+    var output;
     // var logBrowser;
 
     if (_tests.length === 0) {
@@ -141,7 +142,7 @@ function MultiBrowserSummaryReporter(logger, config) {
         // browser.log.forEach(logBrowser);
         browser.log = [];
 
-        var output = report(browser);
+        output = report(browser);
 
         if (output) {
           suiteOutput += ('\n' + browser.name + '\n').bold.underline + output;
