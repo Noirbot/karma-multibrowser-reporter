@@ -148,7 +148,7 @@ function MultiBrowserSummaryReporter(config) {
         } else {
           process.stdout.write('Suites and tests results:\n'.bold.underline);
         }
-        process.stdout.write(suiteOutput + '\n');
+        process.stdout.write(suiteOutput);
       }
 
       process.stdout.write('\nPer browser summary:\n\n'.bold.underline);
