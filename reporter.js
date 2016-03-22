@@ -1,20 +1,18 @@
-var util = require('util');
 require('colors');
 
-function MultiBrowserSummaryReporter(logger, config) {
+function MultiBrowserSummaryReporter(config) {
   var _tests = null;
 
   /* ======================================================================== */
   /* INTERNAL FUNCTIONS                                                       */
   /* ======================================================================== */
 
-  function print() {
-    process.stdout.write(util.format.apply(this, arguments));
-    process.stdout.write('\n');
-  }
-
-  function forBrowser(browser) {
-    /* onBrowserLog might arrive before onBrowserStart, sooo */
+  /*
+   * Check if we already know about this browser.
+   *  - If we do, return what we have alread.
+   *  - If it's a new browser, set up the data structure for it, then return it.
+   */
+  function getBrowserSafely(browser) {
     if (_tests[browser.id]) return _tests[browser.id];
     _tests[browser.id] = {
       name: browser.name,
@@ -28,30 +26,37 @@ function MultiBrowserSummaryReporter(logger, config) {
     return _tests[browser.id];
   }
 
-  function message(result) {
+  /*
+   * Generate a text summary of all of the tests run, split by browsers.
+   */
+  function generateSummaryOutput(result) {
     var responses = [];
-    var joinWith = '';
+    var delimiter = '';
     if (result.total > 0) {
       if (result.total === 1) {
         responses = [];
         if (result.successes) responses.push('ok'.green);
         if (result.failures) responses.push('failed'.red);
         if (result.skipped) responses.push('skipped'.yellow);
-        joinWith = ' ';
+        delimiter = ' ';
       } else {
         responses = [];
         if (result.successes) responses.push((result.successes + ' ok').green);
         if (result.failures) responses.push((result.failures + ' failed').red);
         if (result.skipped) responses.push((result.skipped + ' skipped').yellow);
-        joinWith = ', ';
+        delimiter = ', ';
       }
-      return responses.join(joinWith);
+      return responses.join(delimiter);
     }
 
     return 'no tests'.magenta;
   }
 
-  function report(tests, baseIndent) {
+  /*
+   * Generate a verbose summary of tests run, and their results.
+   * Recursively calls itself with levels of indention changed.
+   */
+  function generateTestResultOutput(tests, baseIndent) {
     var indent = baseIndent || '';
     var output = '';
     var results;
@@ -101,7 +106,7 @@ function MultiBrowserSummaryReporter(logger, config) {
     if (suites) {
       for (var j in suites) {
         var suiteStr = [indent, '-', suites[j].bold, ':', '\n'].join(' ');
-        var testReport = report(tests.suites[suites[j]], '  ' + indent);
+        var testReport = generateTestResultOutput(tests.suites[suites[j]], '  ' + indent);
 
         if (testReport) {
           suiteStr += testReport;
@@ -125,24 +130,16 @@ function MultiBrowserSummaryReporter(logger, config) {
     var browser = null;
     var suiteOutput;
     var output;
-    // var logBrowser;
 
     if (_tests.length === 0) {
       process.stdout.write('\n\nNo results found.\n'.bold.underline);
     } else {
       suiteOutput = '';
 
-      // logBrowser = function bLog(entry) {
-      //   log[entry.level](entry.message);
-      // };
-
       for (var i in _tests) {
         browser = _tests[i];
-        var log = logger.create(browser.name);
-        // browser.log.forEach(logBrowser);
-        browser.log = [];
 
-        output = report(browser);
+        output = generateTestResultOutput(browser);
 
         if (output) {
           suiteOutput += ('\n' + browser.name + '\n').bold.underline + output;
@@ -159,23 +156,20 @@ function MultiBrowserSummaryReporter(logger, config) {
         process.stdout.write('\n' + suiteOutput + '\n');
       }
 
-      print();
-      print('Per browser summary:'.bold.underline);
-      print();
+      process.stdout.write('\nPer browser summary:\n\n'.bold.underline);
 
       for (var j in _tests) {
         browser = _tests[j];
-        print(' - ' + browser.name.bold + ': ' + browser.total + ' tests');
-        print('   - ' + message(browser));
+        process.stdout.write(' - ' + browser.name.bold + ': ' + browser.total + ' tests\n');
+        process.stdout.write('   - ' + generateSummaryOutput(browser) + '\n');
       }
     }
-
-    print();
+    process.stdout.write('\n');
   };
 
   this.onSpecComplete = function specComplete(browser, result) {
     var suite = '';
-    var b = forBrowser(browser);
+    var b = getBrowserSafely(browser);
     var tests = b;
 
     for (var i in result.suite) {
@@ -188,13 +182,6 @@ function MultiBrowserSummaryReporter(logger, config) {
     }
 
     suite = suite.length > 2 ? ' | ' + suite.substring(2) + ' | ' : ' | ';
-
-    // var log = logger.create(browser.name + suite + result.description);
-    //
-    // b.log.forEach(function(entry) {
-    //   log[entry.level](entry.message);
-    // });
-    // b.log = [];
 
     if (! tests.result) tests.result = {};
     if (! tests.result[result.description]) tests.result[result.description] = null;
@@ -220,7 +207,7 @@ function MultiBrowserSummaryReporter(logger, config) {
 /* MODULE DECLARATION                                                         */
 /* ========================================================================== */
 
-MultiBrowserSummaryReporter.$inject = ['logger', 'config'];
+MultiBrowserSummaryReporter.$inject = ['config'];
 module.exports = {
   'reporter:multibrowser-summary': ['type', MultiBrowserSummaryReporter]
 };
