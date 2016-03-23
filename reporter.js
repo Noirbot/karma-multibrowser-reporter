@@ -1,4 +1,8 @@
-require('colors');
+var chalk = require('chalk');
+var failureFmt = chalk.red;
+var successFmt = chalk.green;
+var skipFmt = chalk.yellow;
+var emphasisFmt = chalk.bold.underline;
 
 function MultiBrowserSummaryReporter(config) {
   /*
@@ -34,21 +38,21 @@ function MultiBrowserSummaryReporter(config) {
     if (result.total > 0) {
       if (result.total === 1) {
         responses = [];
-        if (result.successes) responses.push('ok'.green);
-        if (result.failures) responses.push('failed'.red);
-        if (result.skipped) responses.push('skipped'.yellow);
+        if (result.successes) responses.push(successFmt('ok'));
+        if (result.failures) responses.push(failureFmt('failed'));
+        if (result.skipped) responses.push(skipFmt('skipped'));
         delimiter = ' ';
       } else {
         responses = [];
-        if (result.successes) responses.push((result.successes + ' ok').green);
-        if (result.failures) responses.push((result.failures + ' failed').red);
-        if (result.skipped) responses.push((result.skipped + ' skipped').yellow);
+        if (result.successes) responses.push(successFmt(result.successes + ' ok'));
+        if (result.failures) responses.push(failureFmt(result.failures + ' failed'));
+        if (result.skipped) responses.push(skipFmt(result.skipped + ' skipped'));
         delimiter = ', ';
       }
       return responses.join(delimiter);
     }
 
-    return 'no tests'.magenta;
+    return chalk.magenta('no tests');
   }
 
   /*
@@ -82,13 +86,13 @@ function MultiBrowserSummaryReporter(config) {
 
         switch (result) {
           case 'success':
-            line = line.green;
+            line = successFmt(line);
             break;
           case 'failure':
-            line = line.red;
+            line = failureFmt(line);
             break;
           case 'skipped':
-            line = line.yellow;
+            line = skipFmt(line);
             break;
           default:
             break;
@@ -104,7 +108,7 @@ function MultiBrowserSummaryReporter(config) {
 
     if (suites) {
       for (var j in suites) {
-        var suiteStr = [indent, '-', suites[j].bold, ':', '\n'].join(' ');
+        var suiteStr = [indent, '-', chalk.bold(suites[j]), ':', '\n'].join(' ');
         var testReport = generateTestResultOutput(tests.suites[suites[j]], '  ' + indent);
 
         if (testReport) {
@@ -127,7 +131,7 @@ function MultiBrowserSummaryReporter(config) {
     var output;
 
     if (_tests.length === 0) {
-      process.stdout.write('\n\nNo results found.\n'.bold.underline);
+      process.stdout.write(emphasisFmt('\n\nNo results found.\n'));
     } else {
       suiteOutput = '';
 
@@ -137,25 +141,25 @@ function MultiBrowserSummaryReporter(config) {
         output = generateTestResultOutput(browser);
 
         if (output) {
-          suiteOutput += ('\n' + browser.name + '\n').bold.underline + output;
+          suiteOutput += emphasisFmt('\n' + browser.name + '\n') + output;
         }
       }
 
       if (suiteOutput) {
         process.stdout.write('\n');
         if (config.verboseReporter.output === 'only-failure') {
-          process.stdout.write('Test failures by browser:\n'.bold.underline);
+          process.stdout.write(emphasisFmt('Test failures by browser:\n'));
         } else {
-          process.stdout.write('Suites and tests results:\n'.bold.underline);
+          process.stdout.write(emphasisFmt('Suites and tests results:\n'));
         }
         process.stdout.write(suiteOutput);
       }
 
-      process.stdout.write('\nPer browser summary:\n\n'.bold.underline);
+      process.stdout.write(emphasisFmt('\nPer browser summary:\n\n'));
 
       for (var j in _tests) {
         browser = _tests[j];
-        process.stdout.write(' - ' + browser.name.bold + ': ' + browser.total + ' tests\n');
+        process.stdout.write(' - ' + chalk.bold(browser.name) + ': ' + browser.total + ' tests\n');
         process.stdout.write('   - ' + generateSummaryOutput(browser) + '\n');
       }
     }
