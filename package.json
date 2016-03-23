@@ -19,7 +19,8 @@
     "karma": ">=0.12"
   },
   "devDependencies": {
-    "eslint": "^2.3.0",
+    "karma": ">=0.12",
+    "eslint": "^2.4.0",
     "eslint-config-airbnb": "^6.1.0",
     "eslint-plugin-react": "^4.2.0"
   },
